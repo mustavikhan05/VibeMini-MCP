@@ -7,7 +7,26 @@ from typing import Optional, Dict, Any
 from fastmcp import FastMCP
 
 # Initialize FastMCP server
-mcp = FastMCP("Selise Blocks API")
+mcp = FastMCP(
+    name="Selise Blocks MCP Server",
+    instructions="""
+Complete Selise Cloud development system with 40 tools:
+- 33 Selise Cloud API tools (authentication, projects, schemas, IAM, MFA, SSO, etc.)
+- 7 Documentation tools (workflows, recipes, patterns, architecture)
+
+DOCUMENTATION WORKFLOW:
+1. list_sections - Discover all available documentation topics
+2. get_project_setup - FIRST when building new projects (Vibecoding workflow)
+3. get_implementation_checklist - REQUIRED before writing code
+4. get_dev_workflow - During implementation (git workflow, commits)
+5. get_architecture_patterns - When planning features (3-layer hierarchy)
+6. get_common_pitfalls - BEFORE committing code (anti-patterns)
+7. get_documentation - Anytime for specific patterns (GraphQL, forms, IAM, etc.)
+
+All documentation fetched from GitHub, always up-to-date.
+Use MCP tools for guidance instead of CLAUDE.md files.
+    """
+)
 
 # Global state for authentication
 auth_state = {
