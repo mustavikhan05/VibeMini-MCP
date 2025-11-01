@@ -3329,5 +3329,112 @@ async def get_documentation(topic: str | list[str]) -> str:
         }, indent=2)
 
 
+# ============================================================================
+# WORKFLOW-SPECIFIC DOCUMENTATION TOOLS
+# ============================================================================
+
+@mcp.tool()
+async def get_project_setup() -> str:
+    """
+    ⚠️ STEP 1: Call FIRST when user wants to build a project.
+
+    Returns the complete Vibecoding workflow for project setup including:
+    - User interaction patterns
+    - Feature planning approach
+    - Tracking file setup (TASKS.md, SCRATCHPAD.md, etc.)
+    - MCP tool usage workflow
+
+    This is the FIRST tool to call when starting any new project.
+
+    Returns:
+        JSON string with project setup workflow documentation
+
+    NEXT: Follow Vibecoding flow, then call get_implementation_checklist
+    """
+    return await get_documentation("project-setup")
+
+
+@mcp.tool()
+async def get_implementation_checklist() -> str:
+    """
+    ⚠️ REQUIRED - Call BEFORE writing implementation code.
+
+    Returns the implementation checklist to verify prerequisites before coding:
+    - Schema confirmation requirements
+    - User approval checkpoints
+    - MCP tool preparation steps
+    - Architecture planning verification
+
+    Call this after project setup and BEFORE starting implementation.
+
+    Returns:
+        JSON string with implementation checklist documentation
+
+    NEXT: Call get_dev_workflow and get_architecture_patterns
+    """
+    return await get_documentation("implementation-checklist")
+
+
+@mcp.tool()
+async def get_dev_workflow() -> str:
+    """
+    Call when starting implementation or when git workflow is unclear.
+
+    Returns the development workflow including:
+    - Git commit patterns
+    - Code review process
+    - Testing approach
+    - Deployment workflow
+
+    Use this during active development to follow proper workflow.
+
+    Returns:
+        JSON string with development workflow documentation
+
+    NEXT: Call get_documentation for specific patterns, get_common_pitfalls before commits
+    """
+    return await get_documentation("dev-workflow")
+
+
+@mcp.tool()
+async def get_architecture_patterns() -> str:
+    """
+    Call when planning features or deciding component structure.
+
+    Returns the 3-layer architecture hierarchy guide:
+    - Feature → Block → UI component structure
+    - Component organization patterns
+    - When to use which components
+    - Proper separation of concerns
+
+    Use this when designing new features or refactoring structure.
+
+    Returns:
+        JSON string with architecture patterns documentation
+
+    Remember: Inventory is STRUCTURE only, use graphql-crud recipe for data operations
+    """
+    return await get_documentation("architecture-patterns")
+
+
+@mcp.tool()
+async def get_common_pitfalls() -> str:
+    """
+    ⚠️ Call BEFORE committing code.
+
+    Returns anti-patterns and common mistakes to avoid:
+    - GraphQL operation mistakes
+    - Data handling errors
+    - Component usage anti-patterns
+    - Security pitfalls
+
+    Use this as a final check before committing to catch common errors.
+
+    Returns:
+        JSON string with common pitfalls documentation
+    """
+    return await get_documentation("common-pitfalls")
+
+
 if __name__ == "__main__":
     mcp.run()
