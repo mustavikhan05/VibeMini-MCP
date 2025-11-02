@@ -3239,26 +3239,16 @@ async def list_sections() -> str:
         }, indent=2)
 
 
-@mcp.tool()
-async def get_documentation(topic: str | list[str]) -> str:
+async def _fetch_documentation(topic: str | list[str]) -> str:
     """
-    Fetch specific Selise Blocks documentation by topic ID or multiple topics.
-
-    Use this tool to retrieve full documentation content for:
-    - Workflows: 'project-setup', 'feature-planning', 'implementation-checklist'
-    - Recipes: 'graphql-crud', 'react-hook-form', 'permissions-and-roles'
-    - Architecture: 'patterns', 'pitfalls'
-    - Components: 'component-quick-reference', 'selise-component-hierarchy'
-
-    Call list_sections first to discover all available topics and their IDs.
+    Helper function to fetch Selise Blocks documentation by topic ID or multiple topics.
+    This is the core implementation used by get_documentation and workflow-specific tools.
 
     Args:
-        topic: Single topic ID (string) or list of topic IDs (e.g., ['graphql-crud', 'patterns'])
+        topic: Single topic ID (string) or list of topic IDs
 
     Returns:
         JSON string with full markdown content for requested topics
-
-    Note: Token limit is ~20-25k per call. For large requests, split into multiple calls.
     """
     try:
         # Normalize topic to list
@@ -3348,6 +3338,30 @@ async def get_documentation(topic: str | list[str]) -> str:
         }, indent=2)
 
 
+@mcp.tool()
+async def get_documentation(topic: str | list[str]) -> str:
+    """
+    Fetch specific Selise Blocks documentation by topic ID or multiple topics.
+
+    Use this tool to retrieve full documentation content for:
+    - Workflows: 'project-setup', 'feature-planning', 'implementation-checklist'
+    - Recipes: 'graphql-crud', 'react-hook-form', 'permissions-and-roles'
+    - Architecture: 'patterns', 'pitfalls'
+    - Components: 'component-quick-reference', 'selise-component-hierarchy'
+
+    Call list_sections first to discover all available topics and their IDs.
+
+    Args:
+        topic: Single topic ID (string) or list of topic IDs (e.g., ['graphql-crud', 'patterns'])
+
+    Returns:
+        JSON string with full markdown content for requested topics
+
+    Note: Token limit is ~20-25k per call. For large requests, split into multiple calls.
+    """
+    return await _fetch_documentation(topic)
+
+
 # ============================================================================
 # WORKFLOW-SPECIFIC DOCUMENTATION TOOLS
 # ============================================================================
@@ -3378,8 +3392,8 @@ async def get_project_setup() -> str:
     """
     # Fetch both project-setup documentation and CLAUDE.md template
     try:
-        # Get project setup docs
-        setup_docs = await get_documentation("project-setup")
+        # Get project setup docs using helper function
+        setup_docs = await _fetch_documentation("project-setup")
 
         # Fetch CLAUDE.md template from GitHub
         claude_md_url = f"{DOCS_CONFIG['BASE_URL']}CLAUDE.md"
@@ -3404,7 +3418,7 @@ async def get_project_setup() -> str:
 
     except Exception as e:
         # Fallback to just project setup if CLAUDE.md fetch fails
-        return await get_documentation("project-setup")
+        return await _fetch_documentation("project-setup")
 
 
 @mcp.tool()
@@ -3425,7 +3439,7 @@ async def get_implementation_checklist() -> str:
 
     NEXT: Call get_dev_workflow and get_architecture_patterns
     """
-    return await get_documentation("implementation-checklist")
+    return await _fetch_documentation("implementation-checklist")
 
 
 @mcp.tool()
@@ -3446,7 +3460,7 @@ async def get_dev_workflow() -> str:
 
     NEXT: Call get_documentation for specific patterns, get_common_pitfalls before commits
     """
-    return await get_documentation("dev-workflow")
+    return await _fetch_documentation("dev-workflow")
 
 
 @mcp.tool()
@@ -3467,7 +3481,7 @@ async def get_architecture_patterns() -> str:
 
     Remember: Inventory is STRUCTURE only, use graphql-crud recipe for data operations
     """
-    return await get_documentation("architecture-patterns")
+    return await _fetch_documentation("architecture-patterns")
 
 
 @mcp.tool()
@@ -3486,7 +3500,7 @@ async def get_common_pitfalls() -> str:
     Returns:
         JSON string with common pitfalls documentation
     """
-    return await get_documentation("common-pitfalls")
+    return await _fetch_documentation("common-pitfalls")
 
 
 if __name__ == "__main__":
