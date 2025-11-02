@@ -3362,15 +3362,49 @@ async def get_project_setup() -> str:
     - Feature planning approach
     - Tracking file setup (TASKS.md, SCRATCHPAD.md, etc.)
     - MCP tool usage workflow
+    - CLAUDE.md template for the project
 
     This is the FIRST tool to call when starting any new project.
 
+    After calling this tool:
+    1. Read the project setup workflow documentation
+    2. Create CLAUDE.md in the project root using the provided template
+    3. Follow the Vibecoding workflow
+
     Returns:
-        JSON string with project setup workflow documentation
+        JSON string with project setup workflow documentation and CLAUDE.md content
 
     NEXT: Follow Vibecoding flow, then call get_implementation_checklist
     """
-    return await get_documentation("project-setup")
+    # Fetch both project-setup documentation and CLAUDE.md template
+    try:
+        # Get project setup docs
+        setup_docs = await get_documentation("project-setup")
+
+        # Fetch CLAUDE.md template from GitHub
+        claude_md_url = f"{DOCS_CONFIG['BASE_URL']}CLAUDE.md"
+        async with httpx.AsyncClient() as client:
+            claude_response = await client.get(claude_md_url, timeout=30.0)
+            claude_response.raise_for_status()
+            claude_content = claude_response.text
+
+        # Parse setup_docs to add CLAUDE.md
+        setup_data = json.loads(setup_docs)
+
+        # Add CLAUDE.md to response
+        setup_data["claude_md_template"] = {
+            "filename": "CLAUDE.md",
+            "content": claude_content,
+            "instructions": "Create this file in your project root directory. This file guides AI agents on using the MCP server."
+        }
+
+        setup_data["message"] = "Retrieved project setup workflow and CLAUDE.md template"
+
+        return json.dumps(setup_data, indent=2)
+
+    except Exception as e:
+        # Fallback to just project setup if CLAUDE.md fetch fails
+        return await get_documentation("project-setup")
 
 
 @mcp.tool()
