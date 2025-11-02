@@ -3395,7 +3395,7 @@ async def get_project_setup() -> str:
         setup_data["claude_md_template"] = {
             "filename": "CLAUDE.md",
             "content": claude_content,
-            "instructions": "Create this file in your project root directory. This file guides AI agents on using the MCP server."
+            "instructions": "Create this file in your project root directory. For Claude Code, name it 'CLAUDE.md'. For Cursor, name it '.cursorrules'. This file guides AI agents on using the MCP server."
         }
 
         setup_data["message"] = "Retrieved project setup workflow and CLAUDE.md template"
