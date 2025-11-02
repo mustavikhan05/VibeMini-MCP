@@ -3504,4 +3504,5 @@ async def get_common_pitfalls() -> str:
 
 
 if __name__ == "__main__":
-    mcp.run()
+    # For FastMCP Cloud deployment and multi-user HTTP access
+    mcp.run(transport="http", host="0.0.0.0", port=8000)
