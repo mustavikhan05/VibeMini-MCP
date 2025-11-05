@@ -54,10 +54,10 @@ API_CONFIG = {
     "CREATE_URL": "https://api.seliseblocks.com/identifier/v1/Project/Create",
     "GET_PROJECTS_URL": "https://api.seliseblocks.com/identifier/v1/Project/Gets",
     "GET_ITEM_URL": "https://api.seliseblocks.com/identifier/v1/Project/Get",
-    "CREATE_SCHEMA_URL": "https://api.seliseblocks.com/graphql/v1/schemas/info",
-    "LIST_SCHEMAS_URL": "https://api.seliseblocks.com/graphql/v1/schemas",
-    "SCHEMA_FIELDS_URL": "https://api.seliseblocks.com/graphql/v1/schemas/fields",
-    "GET_SCHEMA_URL": "https://api.seliseblocks.com/graphql/v1/schemas",
+    "CREATE_SCHEMA_URL": "https://api.seliseblocks.com/data/v1/schemas/info",
+    "LIST_SCHEMAS_URL": "https://api.seliseblocks.com/data/v1/schemas",
+    "SCHEMA_FIELDS_URL": "https://api.seliseblocks.com/data/v1/schemas/fields",
+    "GET_SCHEMA_URL": "https://api.seliseblocks.com/data/v1/schemas",
     "UPDATE_CONFIG_URL": "https://api.seliseblocks.com/authentication/v1/Configuration/Update",
     "GET_CONFIG_URL": "https://api.seliseblocks.com/authentication/v1/Configuration/Get",
     "CAPTCHA_SAVE_URL": "https://api.seliseblocks.com/captcha/v1/Configuration/Save",
@@ -384,8 +384,8 @@ async def create_schema(schema_name: str, project_key: str = "") -> str:
             "x-blocks-key": "d7e5554c758541db8a18694b64ef423d"  # Use the account's tenant_id from JWT
         }
         
-        # Prepare payload - collection name is schema name with 's' appended (lowercased)
-        collection_name = f"{schema_name}s"
+        # Prepare payload - collection name is schema name prefixed with 'sb_' and 's' appended
+        collection_name = f"sb_{schema_name}s"
         schema_payload = {
             "schemaName": schema_name,
             "collectionName": collection_name,
@@ -623,11 +623,17 @@ async def get_schema(schema_id: str, project_key: str = "") -> str:
         
         # Get schema details using schema ID
         url = f"{API_CONFIG['GET_SCHEMA_URL']}/{schema_id}"
-        
+
+        # Add projectKey as query parameter
+        params = {
+            "projectKey": project_key
+        }
+
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 url,
                 headers=headers,
+                params=params,
                 timeout=30.0
             )
             response.raise_for_status()
@@ -705,13 +711,39 @@ async def update_schema_fields(schema_id: str, fields: list, project_key: str = 
             "x-blocks-key": "d7e5554c758541db8a18694b64ef423d"
         }
         
+        # Normalize fields to match API requirements
+        normalized_fields = []
+        for field in fields:
+            normalized_field = {
+                "name": field.get("name"),
+                "type": field.get("type"),
+                "isArray": field.get("isArray", False),
+                "totalRoles": field.get("totalRoles", 0),
+                "totalUsers": field.get("totalUsers", 0),
+                "totalPermissions": field.get("totalPermissions", 0)
+            }
+
+            # Add access control - use empty arrays [] instead of null
+            if "id" in field:
+                # Existing field with ID
+                normalized_field["id"] = field["id"]
+                normalized_field["readAccess"] = field.get("readAccess", {"roles": [], "permissions": [], "users": []})
+                normalized_field["writeAccess"] = field.get("writeAccess", {"roles": [], "permissions": [], "users": []})
+                normalized_field["deleteAccess"] = field.get("deleteAccess", {"roles": [], "permissions": [], "users": []})
+            else:
+                # New field without ID - don't add access control fields
+                pass
+
+            normalized_fields.append(normalized_field)
+
         # Prepare payload matching the curl example
         payload = {
-            "fields": fields,
+            "fields": normalized_fields,
             "schemaDefinitionItemId": schema_id,
-            "deletableFieldNames": []
+            "deletableFieldNames": [],
+            "projectKey": project_key
         }
-        
+
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 API_CONFIG["SCHEMA_FIELDS_URL"],
