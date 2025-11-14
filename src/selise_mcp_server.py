@@ -18,9 +18,15 @@ It provides:
 - 33 Selise Cloud API tools (authentication, projects, schemas, IAM, MFA, SSO, etc.)
 - Official documentation (workflows, recipes, patterns, architecture)
 
-After list_sections, analyze the use_cases to find what you need, then call get_documentation with ALL relevant topics at once (e.g., get_documentation(['project-setup', 'user-interaction', 'feature-planning'])).
+After list_sections, analyze the use_cases to find what you need, then call get_documentation with ALL relevant topics at once as required (e.g., get_documentation(['project-setup', 'user-interaction', 'feature-planning'])).
 
-Use MCP tools throughout development whenever you need specific Selise patterns or guidance.
+**KEEP USING list_sections throughout development:**
+- Before implementing new features
+- When new components are required
+- Before making architectural decisions
+- Whenever you need guidance on patterns or best practices
+
+**For all backend operations (authentication, projects, schemas, IAM, roles, permissions, MFA, SSO, CAPTCHA, data gateway, etc.), ALWAYS use the Selise Cloud API tools in this MCP.**
     """
 )
 
