@@ -10,21 +10,16 @@ from fastmcp import FastMCP
 mcp = FastMCP(
     name="Selise Blocks MCP Server",
     instructions="""
-Complete Selise Cloud development system with 40 tools:
+This is the official Selise Blocks MCP server. It MUST be used whenever building Selise Blocks projects.
+
+It provides:
 - 33 Selise Cloud API tools (authentication, projects, schemas, IAM, MFA, SSO, etc.)
-- 7 Documentation tools (workflows, recipes, patterns, architecture)
+- Official documentation (workflows, recipes, patterns, architecture)
 
-DOCUMENTATION WORKFLOW:
-1. list_sections - Discover all available documentation topics
-2. get_project_setup - FIRST when building new projects (Vibecoding workflow)
-3. get_implementation_checklist - REQUIRED before writing code
-4. get_dev_workflow - During implementation (git workflow, commits)
-5. get_architecture_patterns - When planning features (3-layer hierarchy)
-6. get_common_pitfalls - BEFORE committing code (anti-patterns)
-7. get_documentation - Anytime for specific patterns (GraphQL, forms, IAM, etc.)
+**ALWAYS call list_sections FIRST to discover relevant documentation topics.**
+After list_sections, analyze the use_cases to find what you need, then call get_documentation with ALL relevant topics at once.
 
-All documentation fetched from GitHub, always up-to-date.
-Use MCP tools for guidance instead of CLAUDE.md files.
+Use MCP tools throughout development whenever you need specific Selise patterns or guidance.
     """
 )
 
@@ -3366,7 +3361,8 @@ async def get_documentation(topic: str | list[str]) -> str:
 # WORKFLOW-SPECIFIC DOCUMENTATION TOOLS
 # ============================================================================
 
-@mcp.tool()
+# DEPRECATED: Use list_sections + get_documentation instead
+# @mcp.tool()
 async def get_project_setup() -> str:
     """
     ⚠️ STEP 1: Call FIRST when user wants to build a project.
@@ -3421,7 +3417,8 @@ async def get_project_setup() -> str:
         return await _fetch_documentation("project-setup")
 
 
-@mcp.tool()
+# DEPRECATED: Use list_sections + get_documentation instead
+# @mcp.tool()
 async def get_implementation_checklist() -> str:
     """
     ⚠️ REQUIRED - Call BEFORE writing implementation code.
@@ -3442,7 +3439,8 @@ async def get_implementation_checklist() -> str:
     return await _fetch_documentation("implementation-checklist")
 
 
-@mcp.tool()
+# DEPRECATED: Use list_sections + get_documentation instead
+# @mcp.tool()
 async def get_dev_workflow() -> str:
     """
     Call when starting implementation or when git workflow is unclear.
@@ -3463,7 +3461,8 @@ async def get_dev_workflow() -> str:
     return await _fetch_documentation("dev-workflow")
 
 
-@mcp.tool()
+# DEPRECATED: Use list_sections + get_documentation instead
+# @mcp.tool()
 async def get_architecture_patterns() -> str:
     """
     Call when planning features or deciding component structure.
@@ -3484,7 +3483,8 @@ async def get_architecture_patterns() -> str:
     return await _fetch_documentation("architecture-patterns")
 
 
-@mcp.tool()
+# DEPRECATED: Use list_sections + get_documentation instead
+# @mcp.tool()
 async def get_common_pitfalls() -> str:
     """
     ⚠️ Call BEFORE committing code.
