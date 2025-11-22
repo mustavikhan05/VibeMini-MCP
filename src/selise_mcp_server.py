@@ -829,11 +829,17 @@ async def finalize_schema(schema_id: str, project_key: str = "") -> str:
         
         # Get finalized schema data
         url = f"{API_CONFIG['GET_SCHEMA_URL']}/{schema_id}"
-        
+
+        # Add projectKey as query parameter (same as get_schema)
+        params = {
+            "projectKey": project_key
+        }
+
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 url,
                 headers=headers,
+                params=params,
                 timeout=30.0
             )
             response.raise_for_status()
