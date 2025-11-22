@@ -1146,9 +1146,13 @@ async def create_local_repository(repository_name: str = "",
             else:
                 repository_name = "selise-repository"
 
-        # Build the command
-        cli_flag = "--cli" if use_cli else ""
-        command = f"blocks new {template} {repository_name} {cli_flag} --blocks-key {app_state['tenant_id']} --app-domain {app_state['application_domain']}"
+        # Extract project slug from domain
+        # Domain format: https://{slug}-{random}.seliseblocks.com
+        domain = app_state["application_domain"]
+        project_slug = domain.split("//")[1].split("-")[0]
+
+        # Build the command with correct syntax
+        command = f"blocks new {template} {repository_name} --x-blocks-key {app_state['tenant_id']} --app-domain {app_state['application_domain']} --project-slug {project_slug}"
 
         return json.dumps({
             "status": "ready",
@@ -1158,6 +1162,7 @@ async def create_local_repository(repository_name: str = "",
             "template": template,
             "tenant_id": app_state["tenant_id"],
             "application_domain": app_state["application_domain"],
+            "project_slug": project_slug,
             "instructions": f"1. Navigate to your projects folder\n2. Run the command above\n3. A new folder named '{repository_name}' will be created with your project",
             "prerequisites": "Blocks CLI must be installed. Use check_blocks_cli or install_blocks_cli if needed.",
             "next_steps": "After creating the repository, use init_git_repository to set up Git for deployment to Selise Cloud."
