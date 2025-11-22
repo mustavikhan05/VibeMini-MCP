@@ -1,7 +1,5 @@
 import httpx
 import json
-import subprocess
-import asyncio
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 from fastmcp import FastMCP
@@ -110,31 +108,6 @@ def get_auth_headers() -> dict:
     if auth_state["access_token"]:
         headers["Authorization"] = f"Bearer {auth_state['access_token']}"
     return headers
-
-
-async def run_command(command: str) -> Dict[str, Any]:
-    """Run a shell command asynchronously and return the result."""
-    try:
-        process = await asyncio.create_subprocess_shell(
-            command,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
-        )
-        stdout, stderr = await process.communicate()
-        
-        return {
-            "success": process.returncode == 0,
-            "returncode": process.returncode,
-            "stdout": stdout.decode('utf-8').strip(),
-            "stderr": stderr.decode('utf-8').strip()
-        }
-    except Exception as e:
-        return {
-            "success": False,
-            "returncode": -1,
-            "stdout": "",
-            "stderr": str(e)
-        }
 
 
 @mcp.tool()
@@ -1107,71 +1080,56 @@ async def set_application_domain(domain: str, tenant_id: str, project_name: str 
 @mcp.tool()
 async def check_blocks_cli() -> str:
     """
-    Check if Blocks CLI is installed and available.
-    
+    Get instructions for checking if Blocks CLI is installed locally.
+
     Returns:
-        JSON string with CLI availability status
+        JSON string with command to check CLI installation status
     """
-    # Check if blocks command is available
-    result = await run_command("blocks --version")
-    
-    if result["success"]:
-        return json.dumps({
-            "status": "success",
-            "message": "Blocks CLI is installed and available",
-            "version": result["stdout"]
-        }, indent=2)
-    else:
-        return json.dumps({
-            "status": "not_installed",
-            "message": "Blocks CLI is not installed",
-            "error": result["stderr"]
-        }, indent=2)
+    return json.dumps({
+        "status": "info",
+        "message": "To check if Blocks CLI is installed, run this command in your terminal:",
+        "command": "blocks --version",
+        "instructions": "If installed, you'll see the version number. If not installed, use the install_blocks_cli tool to get installation instructions."
+    }, indent=2)
 
 
 @mcp.tool()
 async def install_blocks_cli() -> str:
     """
-    Install Blocks CLI using npm.
-    
+    Get instructions and commands for installing Blocks CLI using npm.
+
     Returns:
-        JSON string with installation result
+        JSON string with installation commands and verification steps
     """
-    result = await run_command("npm install -g @seliseblocks/cli")
-    
-    if result["success"]:
-        # Verify installation
-        verify_result = await run_command("blocks --version")
-        
-        return json.dumps({
-            "status": "success",
-            "message": "Blocks CLI installed successfully",
-            "installation_output": result["stdout"],
-            "version": verify_result["stdout"] if verify_result["success"] else "Unknown"
-        }, indent=2)
-    else:
-        return json.dumps({
-            "status": "error",
-            "message": "Failed to install Blocks CLI",
-            "error": result["stderr"],
-            "output": result["stdout"]
-        }, indent=2)
+    return json.dumps({
+        "status": "ready",
+        "message": "To install Blocks CLI, run these commands in your terminal:",
+        "commands": [
+            "npm install -g @seliseblocks/cli",
+            "blocks --version"
+        ],
+        "instructions": "1. Run the installation command (first command)\n2. Verify installation with version check (second command)\n3. You should see the CLI version number if installation was successful",
+        "prerequisites": "Node.js and npm must be installed on your system"
+    }, indent=2)
 
 
 @mcp.tool()
-async def create_local_repository(repository_name: str = "", 
-                                template: str = "web", 
+async def create_local_repository(repository_name: str = "",
+                                template: str = "web",
                                 use_cli: bool = True) -> str:
     """
-    Create a local Selise repository using Blocks CLI.
-    
+    Get the command to create a local Selise repository using Blocks CLI.
+
+    This tool generates the complete blocks CLI command with your project's
+    configuration (tenant ID and application domain) pre-filled.
+
     Args:
         repository_name: Name for the local repository (uses project name if empty)
         template: Template to use for the repository (default: "web")
         use_cli: Whether to use CLI mode (default: True)
-    
+
     Returns:
-        JSON string with repository creation result
+        JSON string with the command to run locally and instructions
     """
     try:
         # Check if we have the required information
@@ -1180,120 +1138,87 @@ async def create_local_repository(repository_name: str = "",
                 "status": "error",
                 "message": "Missing tenant ID or application domain. Please run get_projects or set_application_domain first."
             }, indent=2)
-        
+
         # Use project name from global state if repository_name is not provided
         if not repository_name:
             if app_state["project_name"]:
                 repository_name = app_state["project_name"]
             else:
                 repository_name = "selise-repository"
-        
-        # Check if Blocks CLI is available
-        cli_check = await run_command("blocks --version")
-        if not cli_check["success"]:
-            return json.dumps({
-                "status": "error",
-                "message": "Blocks CLI is not installed. Please run install_blocks_cli first.",
-                "details": cli_check["stderr"]
-            }, indent=2)
-        
+
         # Build the command
         cli_flag = "--cli" if use_cli else ""
         command = f"blocks new {template} {repository_name} {cli_flag} --blocks-key {app_state['tenant_id']} --app-domain {app_state['application_domain']}"
-        
-        # Create the repository
-        result = await run_command(command)
-        
-        if result["success"]:
-            return json.dumps({
-                "status": "success",
-                "message": f"Local repository '{repository_name}' created successfully",
-                "command_used": command,
-                "output": result["stdout"],
-                "tenant_id": app_state["tenant_id"],
-                "application_domain": app_state["application_domain"],
-                "git_prompt": "Git initialization is mandatory for deployment to Selise Cloud. Use the 'init_git_repository' tool to initialize git with your GitHub repository."
-            }, indent=2)
-        else:
-            return json.dumps({
-                "status": "error",
-                "message": "Failed to create local repository",
-                "command_used": command,
-                "error": result["stderr"],
-                "output": result["stdout"]
-            }, indent=2)
-        
+
+        return json.dumps({
+            "status": "ready",
+            "message": "To create your local repository, run this command in your terminal:",
+            "command": command,
+            "repository_name": repository_name,
+            "template": template,
+            "tenant_id": app_state["tenant_id"],
+            "application_domain": app_state["application_domain"],
+            "instructions": f"1. Navigate to your projects folder\n2. Run the command above\n3. A new folder named '{repository_name}' will be created with your project",
+            "prerequisites": "Blocks CLI must be installed. Use check_blocks_cli or install_blocks_cli if needed.",
+            "next_steps": "After creating the repository, use init_git_repository to set up Git for deployment to Selise Cloud."
+        }, indent=2)
+
     except Exception as e:
         return json.dumps({
             "status": "error",
-            "message": f"Error during repository creation: {str(e)}"
+            "message": f"Error generating repository creation command: {str(e)}"
         }, indent=2)
 
 
 @mcp.tool()
 async def init_git_repository(github_name: str, repo_name: str, directory_path: str = ".") -> str:
     """
-    Initialize a git repository with the specified remote origin and push to dev branch.
-    
+    Get commands to initialize a git repository and push to GitHub.
+
+    This tool generates the complete git initialization workflow including
+    remote setup and initial push to the dev branch.
+
     Args:
         github_name: GitHub username or organization name
         repo_name: Repository name on GitHub
         directory_path: Path to the directory to initialize (default: current directory)
-    
+
     Returns:
-        JSON string with git initialization result
+        JSON string with git commands to run locally and instructions
     """
     try:
-        import os
-        
-        # Change to the specified directory if provided
-        if directory_path != ".":
-            if not os.path.exists(directory_path):
-                return json.dumps({
-                    "status": "error",
-                    "message": f"Directory '{directory_path}' does not exist"
-                }, indent=2)
-            os.chdir(directory_path)
-        
+        # Build the list of commands
         commands = [
+            f"cd {directory_path}" if directory_path != "." else "# Already in the correct directory",
             "git init",
             f"git remote add origin https://github.com/{github_name}/{repo_name}",
-            "git branch -M dev", 
+            "git branch -M dev",
             "git add .",
             "git commit -m 'feat: initiate project'",
             "git push -u origin dev"
         ]
-        
-        results = []
-        for command in commands:
-            result = await run_command(command)
-            results.append({
-                "command": command,
-                "success": result["success"],
-                "stdout": result["stdout"],
-                "stderr": result["stderr"]
-            })
-            
-            # If any command fails, return the error
-            if not result["success"]:
-                return json.dumps({
-                    "status": "error",
-                    "message": f"Git initialization failed at command: {command}",
-                    "error": result["stderr"],
-                    "commands_executed": results
-                }, indent=2)
-        
+
         return json.dumps({
-            "status": "success",
-            "message": f"Git repository initialized successfully with remote origin: https://github.com/{github_name}/{repo_name}",
+            "status": "ready",
+            "message": "To initialize git repository and push to GitHub, run these commands in your terminal:",
+            "commands": commands,
+            "working_directory": directory_path,
+            "remote_url": f"https://github.com/{github_name}/{repo_name}",
             "branch": "dev",
-            "commands_executed": results
+            "instructions": "1. Open terminal and navigate to your project directory\n2. Run each command in order\n3. Your code will be pushed to the 'dev' branch on GitHub",
+            "prerequisites": [
+                "Git must be installed on your system",
+                f"GitHub repository '{github_name}/{repo_name}' must exist",
+                "You must have push access to the repository",
+                "Your Git credentials must be configured"
+            ],
+            "notes": "If you get authentication errors, you may need to set up SSH keys or a Personal Access Token for GitHub."
         }, indent=2)
-        
+
     except Exception as e:
         return json.dumps({
             "status": "error",
-            "message": f"Error during git initialization: {str(e)}"
+            "message": f"Error generating git initialization commands: {str(e)}"
         }, indent=2)
 
 
