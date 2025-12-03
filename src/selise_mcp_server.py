@@ -75,6 +75,9 @@ API_CONFIG = {
     "MFA_SAVE_URL": "https://api.seliseblocks.com/mfa/v1/Configuration/Save",
     "GITHUB_REPOS_URL": "https://api.seliseblocks.com/cloudbuild/v1/github/repos",
     "RUN_BUILD_URL": "https://api.seliseblocks.com/cloudbuild/v1/build/run-build",
+    "GET_MODULES_URL": "https://api.seliseblocks.com/uilm/v1/Module/Gets",
+    "GET_LANGUAGES_URL": "https://api.seliseblocks.com/uilm/v1/Language/Gets",
+    "GET_TRANSLATION_SUGGESTION_URL": "https://api.seliseblocks.com/uilm/v1/Assistant/GetTranslationSuggestion",
     "HEADERS": {
         "x-blocks-key": "d7e5554c758541db8a18694b64ef423d",
         "Origin": "https://cloud.seliseblocks.com",
@@ -3121,6 +3124,378 @@ async def enable_authenticator_mfa(project_key: str = "") -> str:
             "status": "error",
             "message": f"Error enabling authenticator MFA: {str(e)}"
         }, indent=2)
+    
+
+    
+@mcp.tool()
+async def get_language_modules(project_key: str = "") -> str:
+    """
+    Get all modules for a project from Selise Blocks UI Layout Manager.
+
+    Args:
+        project_key: Project key (tenant ID). Uses global tenant_id if not provided
+
+    Returns:
+        JSON string with modules list
+    """
+    try:
+        # Check if authenticated
+        if not is_token_valid():
+            return json.dumps({
+                "status": "error",
+                "message": "Authentication required. Please login first using the login tool."
+            }, indent=2)
+
+        # Use global tenant_id if project_key is not provided
+        if not project_key:
+            if not app_state["tenant_id"]:
+                return json.dumps({
+                    "status": "error",
+                    "message": "No project key provided and no tenant ID in global state. Please run get_projects or provide project_key."
+                }, indent=2)
+            project_key = app_state["tenant_id"]
+
+        headers = get_auth_headers()
+
+        params = {
+            "ProjectKey": project_key
+        }
+
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                API_CONFIG["GET_MODULES_URL"],
+                headers=headers,
+                params=params,
+                timeout=30.0
+            )
+            response.raise_for_status()
+            modules_data = response.json()
+
+        # Extract module information
+        modules = modules_data if isinstance(modules_data, list) else modules_data.get("data", [])
+
+        result = {
+            "status": "success",
+            "message": f"Found {len(modules)} module(s)",
+            "project_key": project_key,
+            "modules": modules,
+            "summary": []
+        }
+
+        # Add summary for easier reading
+        for module in modules:
+            result["summary"].append({
+                "name": module.get("name"),
+                "slug": module.get("slug"),
+                "item_id": module.get("itemId"),
+                "description": module.get("description"),
+                "is_active": module.get("isActive"),
+                "created_date": module.get("createdDate")
+            })
+
+        return json.dumps(result, indent=2)
+
+    except httpx.HTTPStatusError as e:
+        return json.dumps({
+            "status": "error",
+            "message": f"HTTP error getting modules: {e.response.status_code}",
+            "details": e.response.text
+        }, indent=2)
+
+    except Exception as e:
+        return json.dumps({
+            "status": "error",
+            "message": f"Error getting modules: {str(e)}"
+        }, indent=2)
+
+
+@mcp.tool()
+async def get_languages(project_key: str = "") -> str:
+    """
+    Get all languages configured for a project from Selise Blocks UI Layout Manager.
+
+    Args:
+        project_key: Project key (tenant ID). Uses global tenant_id if not provided
+
+    Returns:
+        JSON string with languages list
+    """
+    try:
+        # Check if authenticated
+        if not is_token_valid():
+            return json.dumps({
+                "status": "error",
+                "message": "Authentication required. Please login first using the login tool."
+            }, indent=2)
+
+        # Use global tenant_id if project_key is not provided
+        if not project_key:
+            if not app_state["tenant_id"]:
+                return json.dumps({
+                    "status": "error",
+                    "message": "No project key provided and no tenant ID in global state. Please run get_projects or provide project_key."
+                }, indent=2)
+            project_key = app_state["tenant_id"]
+
+        headers = get_auth_headers()
+
+        params = {
+            "projectKey": project_key
+        }
+
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                API_CONFIG["GET_LANGUAGES_URL"],
+                headers=headers,
+                params=params,
+                timeout=30.0
+            )
+            response.raise_for_status()
+            languages_data = response.json()
+
+        # Extract language information
+        languages = languages_data if isinstance(languages_data, list) else languages_data.get("data", [])
+
+        result = {
+            "status": "success",
+            "message": f"Found {len(languages)} language(s)",
+            "project_key": project_key,
+            "languages": languages,
+            "summary": []
+        }
+
+        # Add summary for easier reading
+        for lang in languages:
+            result["summary"].append({
+                "name": lang.get("name"),
+                "code": lang.get("code"),
+                "item_id": lang.get("itemId"),
+                "is_default": lang.get("isDefault"),
+                "is_active": lang.get("isActive"),
+                "created_date": lang.get("createdDate")
+            })
+
+        return json.dumps(result, indent=2)
+
+    except httpx.HTTPStatusError as e:
+        return json.dumps({
+            "status": "error",
+            "message": f"HTTP error getting languages: {e.response.status_code}",
+            "details": e.response.text
+        }, indent=2)
+
+    except Exception as e:
+        return json.dumps({
+            "status": "error",
+            "message": f"Error getting languages: {str(e)}"
+        }, indent=2)
+
+
+# Internal helper to fetch languages (avoids FunctionTool wrapper issue)
+async def _fetch_languages_internal(project_key: str) -> dict:
+    """
+    Internal helper to fetch languages for a project.
+    Returns a dict with status, languages list, or error info.
+    """
+    if not is_token_valid():
+        return {
+            "status": "error",
+            "message": "Authentication required. Please login first using the login tool."
+        }
+
+    if not project_key:
+        if not app_state["tenant_id"]:
+            return {
+                "status": "error",
+                "message": "No project key provided and no tenant ID in global state."
+            }
+        project_key = app_state["tenant_id"]
+
+    headers = get_auth_headers()
+    params = {"projectKey": project_key}
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            API_CONFIG["GET_LANGUAGES_URL"],
+            headers=headers,
+            params=params,
+            timeout=30.0
+        )
+        response.raise_for_status()
+        languages_data = response.json()
+
+    languages = languages_data if isinstance(languages_data, list) else languages_data.get("data", [])
+
+    return {
+        "status": "success",
+        "languages": languages,
+        "project_key": project_key
+    }
+
+
+@mcp.tool()
+async def save_translation_key(
+    key_name: str,
+    module_id: str,
+    translations: list[dict],
+    project_key: str = "",
+    routes: list[str] = None
+) -> str:
+    """
+    Save a new translation key with translations for multiple languages.
+
+    Args:
+        key_name: The name/identifier for the translation key
+        module_id: The module ID to associate the key with (get from get_modules)
+        translations: List of translation objects, each with 'value' and 'culture' keys.
+                     Example: [{"value": "Hello", "culture": "en-US"}, {"value": "Hallo", "culture": "de-DE"}]
+        project_key: Project key (tenant ID). Uses global tenant_id if not provided
+        routes: Optional list of routes to associate with this key
+
+    Returns:
+        JSON string with save result
+    """
+    try:
+        if not is_token_valid():
+            return json.dumps({
+                "status": "error",
+                "message": "Authentication required. Please login first using the login tool."
+            }, indent=2)
+
+        if not project_key:
+            if not app_state["tenant_id"]:
+                return json.dumps({
+                    "status": "error",
+                    "message": "No project key provided and no tenant ID in global state. Please run get_projects or provide project_key."
+                }, indent=2)
+            project_key = app_state["tenant_id"]
+
+        headers = get_auth_headers()
+
+        # Build the resources array from translations
+        resources = []
+        for t in translations:
+            resources.append({
+                "value": t.get("value", ""),
+                "culture": t.get("culture", "")
+            })
+
+        # Determine if partially translated (not all languages have translations)
+        is_partially_translated = any(not t.get("value") for t in translations)
+
+        payload = {
+            "keyName": key_name,
+            "moduleId": module_id,
+            "resources": resources,
+            "routes": routes or [],
+            "isPartiallyTranslated": is_partially_translated,
+            "projectKey": project_key,
+            "itemId": "",
+            "isNewKey": True
+        }
+
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "https://api.seliseblocks.com/uilm/v1/Key/Save",
+                headers=headers,
+                json=payload,
+                timeout=30.0
+            )
+            response.raise_for_status()
+            result_data = response.json()
+
+        return json.dumps({
+            "status": "success",
+            "message": f"Translation key '{key_name}' saved successfully",
+            "project_key": project_key,
+            "module_id": module_id,
+            "key_name": key_name,
+            "translations_count": len(resources),
+            "response": result_data
+        }, indent=2)
+
+    except httpx.HTTPStatusError as e:
+        return json.dumps({
+            "status": "error",
+            "message": f"HTTP error saving translation key: {e.response.status_code}",
+            "details": e.response.text
+        }, indent=2)
+
+    except Exception as e:
+        return json.dumps({
+            "status": "error",
+            "message": f"Error saving translation key: {str(e)}"
+        }, indent=2)
+
+
+@mcp.tool()
+async def create_new_module(
+    module_name: str,
+    project_key: str = ""
+) -> str:
+    """
+    Create a new module in the UI Layout Manager.
+
+    Args:
+        module_name: Name of the module to create
+        project_key: Project key (tenant ID). Uses global tenant_id if not provided
+
+    Returns:
+        JSON string with module creation result
+    """
+    try:
+        if not is_token_valid():
+            return json.dumps({
+                "status": "error",
+                "message": "Authentication required. Please login first using the login tool."
+            }, indent=2)
+
+        if not project_key:
+            if not app_state["tenant_id"]:
+                return json.dumps({
+                    "status": "error",
+                    "message": "No project key provided and no tenant ID in global state. Please run get_projects or provide project_key."
+                }, indent=2)
+            project_key = app_state["tenant_id"]
+
+        headers = get_auth_headers()
+
+        payload = {
+            "moduleName": module_name,
+            "projectKey": project_key
+        }
+
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "https://api.seliseblocks.com/uilm/v1/Module/Save",
+                headers=headers,
+                json=payload,
+                timeout=30.0
+            )
+            response.raise_for_status()
+            result_data = response.json()
+
+        return json.dumps({
+            "status": "success",
+            "message": f"Module '{module_name}' created successfully",
+            "project_key": project_key,
+            "module_name": module_name,
+            "response": result_data
+        }, indent=2)
+
+    except httpx.HTTPStatusError as e:
+        return json.dumps({
+            "status": "error",
+            "message": f"HTTP error creating module: {e.response.status_code}",
+            "details": e.response.text
+        }, indent=2)
+
+    except Exception as e:
+        return json.dumps({
+            "status": "error",
+            "message": f"Error creating module: {str(e)}"
+        }, indent=2)
+
 
 # ============================================================================
 # DOCUMENTATION TOOLS - Selise Blocks Development Guides
