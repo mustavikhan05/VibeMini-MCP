@@ -12,8 +12,9 @@ This is the official Selise Blocks MCP server. **ALWAYS use it for ANY project t
 
 **NEW PROJECT SETUP (FIRST STEP):**
 - **Call get_claude_instructions() FIRST** when starting a new Selise Blocks project
-- Use the Write tool to save the returned content to CLAUDE.md in project root
-- CLAUDE.md becomes part of the project context with implementation loop and critical gotchas
+- Claude Code: Write to CLAUDE.md in project root
+- Cursor: Write to .cursorrules in project root
+- File contains implementation loop and critical gotchas for all tasks
 
 **DOCUMENTATION WORKFLOW (MANDATORY):**
 1. **ALWAYS call list_sections FIRST** - before ANY get_documentation call
@@ -30,7 +31,7 @@ This is the official Selise Blocks MCP server. **ALWAYS use it for ANY project t
 **CRITICAL RULE: NEVER call get_documentation without calling list_sections first in that same conversation turn.**
 
 It provides:
-- get_claude_instructions() - Fetch CLAUDE.md content to add to project root (call FIRST for new projects)
+- get_claude_instructions() - Fetch instructions for CLAUDE.md or .cursorrules (call FIRST for new projects)
 - 33 Selise Cloud API tools (authentication, projects, schemas, IAM, MFA, SSO, etc.)
 - Official documentation (workflows, recipes, patterns, architecture)
 
@@ -3866,13 +3867,16 @@ async def get_common_pitfalls() -> str:
 @mcp.tool()
 async def get_claude_instructions() -> str:
     """
-    Fetch CLAUDE.md to add to project root.
+    Fetch Selise Blocks implementation instructions to add to project root.
 
-    Returns the content of CLAUDE.md which contains the implementation loop
-    and critical gotchas checklist for Selise Blocks development.
+    Returns the content with implementation loop and critical gotchas checklist
+    for Selise Blocks development.
 
-    Call this FIRST when starting a new Selise Blocks project, then write
-    the content to CLAUDE.md in the project root.
+    Call this FIRST when starting a new Selise Blocks project, then:
+    - Claude Code users: Write to CLAUDE.md in project root
+    - Cursor users: Write to .cursorrules in project root
+
+    Same content works for both IDEs.
     """
     try:
         claude_url = "https://raw.githubusercontent.com/mustavikhan05/selise-blocks-docs/master/CLAUDE.md"
