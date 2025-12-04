@@ -3875,7 +3875,7 @@ async def get_claude_instructions() -> str:
     the content to CLAUDE.md in the project root.
     """
     try:
-        claude_url = "https://raw.githubusercontent.com/mustavikhan05/selise-blocks-docs/main/CLAUDE.md"
+        claude_url = "https://raw.githubusercontent.com/mustavikhan05/selise-blocks-docs/master/CLAUDE.md"
 
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.get(claude_url)
