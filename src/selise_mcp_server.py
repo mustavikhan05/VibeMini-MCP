@@ -3888,11 +3888,15 @@ async def get_claude_instructions() -> str:
     Returns the content with implementation loop and critical gotchas checklist
     for Selise Blocks development.
 
-    Call this FIRST when starting a new Selise Blocks project, then:
-    - Claude Code users: Write to CLAUDE.md in project root
-    - Cursor users: Write to .cursorrules in project root
+    Call this FIRST when starting a new Selise Blocks project.
 
-    Same content works for both IDEs.
+    **IMPORTANT: After calling this tool, you MUST immediately write the returned
+    content to the appropriate file in the project root:**
+    - Claude Code: Create/update CLAUDE.md in project root
+    - Cursor: Create/update .cursorrules in project root
+
+    The file creation is NOT automatic - you must use your file writing tool
+    to save the content after receiving it from this tool.
     """
     try:
         claude_url = "https://raw.githubusercontent.com/mustavikhan05/selise-blocks-docs/master/CLAUDE.md"
