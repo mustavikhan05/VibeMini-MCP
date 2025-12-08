@@ -3411,14 +3411,30 @@ async def save_translation_key(
             response.raise_for_status()
             result_data = response.json()
 
+            # Generate UILM file after saving the translation key
+            generate_payload = {
+                "guid": module_id,
+                "projectKey": project_key
+            }
+            generate_response = await client.post(
+                "https://api.seliseblocks.com/uilm/v1/Key/GenerateUilmFile",
+                headers=headers,
+                json=generate_payload,
+                timeout=30.0
+            )
+            generate_response.raise_for_status()
+            generate_result = generate_response.json() if generate_response.text else {}
+
         return json.dumps({
             "status": "success",
-            "message": f"Translation key '{key_name}' saved successfully",
+            "message": f"Translation key '{key_name}' saved successfully and UILM file generated",
             "project_key": project_key,
             "module_id": module_id,
             "key_name": key_name,
             "translations_count": len(resources),
-            "response": result_data
+            "response": result_data,
+            "uilm_file_generated": True,
+            "generate_response": generate_result
         }, indent=2)
 
     except httpx.HTTPStatusError as e:
